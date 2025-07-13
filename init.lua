@@ -1,0 +1,370 @@
+-- General config
+vim.o.termguicolors = true -- Enable 24 bit RGB for terminal
+vim.o.number = true -- Line numbers
+vim.o.relativenumber = true
+-- vim.o.tabstop = 4 -- Visual spaces per tab character
+vim.o.ignorecase = true -- Make searches case insensitive...
+vim.o.smartcase = true -- ...unless they contain a capital letter
+vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
+vim.o.foldmethod = 'indent' -- Fold blocks by indent level
+vim.o.foldenable = false -- Disable folding by default
+vim.o.spell = true -- Spellcheck
+vim.o.spelllang = 'en_us' -- Japanese is more complicated, should likely just be ignored
+
+-- General keybindings
+vim.keymap.set('i', '<F10>', '<Esc>')
+vim.keymap.set('i', '<F12>', '<C-o>A')
+vim.keymap.set('n', '<F8>', '20<C-y>')
+vim.keymap.set('n', '<F9>', '20<C-e>')
+
+-- General commands
+vim.api.nvim_create_user_command('Bx', 'w | bd', { desc = 'Write and close buffer' })
+vim.cmd('cnoreabbrev bx Bx')
+
+-- Show diagnostics inline
+vim.diagnostic.config({
+  virtual_text = true,
+  update_in_insert = true,
+  severity_sort = true,
+  float = { border = 'rounded' },
+})
+-- Setting this manually makes the pop-up show
+vim.keymap.set('n', ']d', vim.diagnostic.goto_next)
+vim.keymap.set('n', '[d', vim.diagnostic.goto_prev)
+
+-- Helper function for coloring solid column ranges
+local function colorcolumn_inclusive_range(start_col, end_col)
+  local range = {}
+  for i = start_col, end_col do
+    table.insert(range, tostring(i))
+  end
+  return table.concat(range, ',')
+end
+
+-- Color different columns depending on the file type
+local filetype_colorcolumn = {
+  rust = '100',
+  go = '100',
+  lua = '100',
+  cpp = '100',
+  c = '80',
+  typescript = '100',
+  typescriptreact = '100',
+  text = '80',
+  markdown = '',
+  python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
+  gitcommit = colorcolumn_inclusive_range(51, 72), -- 50 char title, 72 col body
+}
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = '*',
+  callback = function()
+    vim.opt_local.colorcolumn = filetype_colorcolumn[vim.bo.filetype] or '80,100'
+  end,
+})
+
+-- Bootstrap lazy.nvim
+local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
+if not (vim.uv or vim.loop).fs_stat(lazypath) then
+  local out = vim.fn.system({
+    'git',
+    'clone',
+    '--filter=blob:none',
+    '--branch=stable',
+    'https://github.com/folke/lazy.nvim.git',
+    lazypath,
+  })
+  if vim.v.shell_error ~= 0 then
+    vim.api.nvim_echo({
+      { 'Failed to clone lazy.nvim:\n', 'ErrorMsg' },
+      { out, 'WarningMsg' },
+      { '\nPress any key to exit...' },
+    }, true, {})
+    vim.fn.getchar()
+    os.exit(1)
+  end
+end
+vim.opt.rtp:prepend(lazypath)
+
+-- Make sure to setup `mapleader` and `maplocalleader` before loading lazy.nvim so that mappings
+-- are correct. This is also a good place to setup other settings (vim.opt)
+vim.g.mapleader = ' '
+vim.g.maplocalleader = '\\'
+
+-- Set up lazy.nvim
+require('lazy').setup({
+  spec = { -- Plugins go here
+    -- Basic LSP support
+    { 'neovim/nvim-lspconfig' },
+    { -- Enhanced LSP features
+      'nvimdev/lspsaga.nvim',
+      event = 'LspAttach',
+      config = function()
+        require('lspsaga').setup({ lightbulb = { enable = false }, finder = { max_height = 0.85 } })
+        vim.keymap.set('n', '<leader>hd', '<cmd>Lspsaga hover_doc<CR>')
+        vim.keymap.set('n', '<leader>rn', '<cmd>Lspsaga rename<CR>')
+        vim.keymap.set('n', '<leader>gd', '<cmd>Lspsaga goto_definition<CR>')
+        vim.keymap.set('n', '<leader>fr', '<cmd>Lspsaga finder<CR>')
+      end,
+    },
+    { -- Auto-completion
+      'hrsh7th/nvim-cmp',
+      event = 'InsertEnter',
+      dependencies = {
+        'hrsh7th/cmp-nvim-lsp', -- LSP source
+        'L3MON4D3/LuaSnip', -- Snippets
+      },
+      config = function()
+        local cmp = require('cmp')
+        cmp.setup({
+          mapping = cmp.mapping.preset.insert({
+            ['<F8>'] = cmp.mapping.select_prev_item({ behavior = cmp.SelectBehavior.Insert }),
+            ['<F9>'] = cmp.mapping.select_next_item({ behavior = cmp.SelectBehavior.Insert }),
+            ['<CR>'] = cmp.mapping.confirm({ select = true }),
+          }),
+          sources = { { name = 'nvim_lsp' } },
+        })
+      end,
+    },
+    { -- Formatting and linting
+      'nvimtools/none-ls.nvim',
+      dependencies = {
+        'nvim-lua/plenary.nvim',
+        'nvimtools/none-ls-extras.nvim', -- For eslint_d
+      },
+      config = function()
+        local null_ls = require('null-ls') -- Actually none-ls but called null-ls
+        null_ls.setup({
+          sources = {
+            -- Built-ins seem to need to go first
+            -- TypeScript and many others
+            null_ls.builtins.formatting.prettierd,
+            require('none-ls.code_actions.eslint_d'),
+            require('none-ls.diagnostics.eslint_d'),
+            null_ls.builtins.formatting.stylua, -- Lua
+            null_ls.register({ -- Rust (using nightly for formatting only)
+              name = 'rustfmt',
+              method = null_ls.methods.FORMATTING,
+              filetypes = { 'rust' },
+              generator = null_ls.formatter({
+                command = 'rustup',
+                args = { 'run', 'nightly', 'rustfmt', '--edition', '2024', '--emit=stdout' },
+                to_stdin = true,
+              }),
+            }),
+            -- null_ls.register({ -- More configurable Lua
+            --          name = 'lua-format',
+            --          method = null_ls.methods.FORMATTING,
+            --          filetypes = {'lua'},
+            --          generator = null_ls.formatter({command = 'lua-format', to_stdin = true}),
+            --        }),
+            null_ls.register({ -- Reorder Python imports using Ruff
+              name = 'ruff_imports',
+              method = null_ls.methods.FORMATTING,
+              filetypes = { 'python' },
+              generator = null_ls.formatter({
+                command = 'ruff',
+                args = { 'check', '-', '--select', 'I', '--fix' },
+                to_stdin = true,
+              }),
+            }),
+          },
+        })
+      end,
+    },
+    { -- Syntax parser
+      'nvim-treesitter/nvim-treesitter',
+      branch = 'master',
+      lazy = false,
+      build = ':TSUpdate',
+      config = function()
+        require('nvim-treesitter.configs').setup({
+          ensure_installed = {
+            'rust',
+            'go',
+            'lua',
+            'python',
+            'typescript',
+            'tsx',
+            'markdown',
+            'markdown_inline',
+          },
+          highlight = { enable = true },
+        })
+        vim.wo.foldmethod = 'expr'
+        vim.wo.foldexpr = 'v:lua.vim.treesitter.foldexpr()'
+      end,
+    },
+    { -- Fuzzy finder
+      'nvim-telescope/telescope.nvim',
+      branch = '0.1.x',
+      -- Also uses external dependencies fd and ripgrep
+      dependencies = { 'nvim-lua/plenary.nvim', 'nvim-treesitter/nvim-treesitter' },
+      config = function()
+        local builtin = require('telescope.builtin')
+        require('telescope').setup({ defaults = { layout_strategy = 'vertical' } })
+
+        vim.keymap.set('n', '<leader>ff', builtin.find_files)
+        vim.keymap.set('n', '<leader>fg', builtin.live_grep)
+        vim.keymap.set('n', '<leader>fb', builtin.buffers)
+        vim.keymap.set('n', '<leader>fh', builtin.help_tags)
+
+        -- Stop color column from showing in Telescope pop-up
+        vim.api.nvim_create_autocmd('FileType', {
+          pattern = { 'TelescopePrompt', 'TelescopeResults', 'TelescopePreview' },
+          callback = function() vim.wo.colorcolumn = '' end,
+        })
+      end,
+    },
+    -- { -- Debugger frontend
+    --   'mfussenegger/nvim-dap',
+    --   config = function()
+    --     local dap = require('dap')
+    --     dap.adapters.lldb = { type = 'executable', command = 'rust-lldb', name = 'lldb' }
+    --
+    --     dap.configurations.rust = {
+    --       {
+    --         name = 'Launch',
+    --         type = 'lldb',
+    --         request = 'launch',
+    --         program = function()
+    --           return vim.fn.input(
+    --             'Path to executable: ',
+    --             vim.fn.getcwd() .. '/target/debug/',
+    --             'file'
+    --           )
+    --         end,
+    --         cwd = '${workspaceFolder}',
+    --         stopOnEntry = false,
+    --         args = {},
+    --         runInTerminal = false,
+    --       },
+    --     }
+    --
+    --     vim.keymap.set('n', '<F5>', function() dap.continue() end)
+    --     vim.keymap.set('n', '<F10>', function() dap.step_over() end)
+    --     vim.keymap.set('n', '<F11>', function() dap.step_into() end)
+    --     vim.keymap.set('n', '<F12>', function() dap.step_out() end)
+    --     vim.keymap.set('n', '<leader>b', function() dap.toggle_breakpoint() end)
+    --     vim.keymap.set(
+    --       'n',
+    --       '<leader>B',
+    --       function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end
+    --     )
+    --     vim.keymap.set(
+    --       'n',
+    --       '<leader>lp',
+    --       function() dap.set_breakpoint(nil, nil, vim.fn.input('Log point message: ')) end
+    --     )
+    --     vim.keymap.set('n', '<leader>dr', function() dap.repl.open() end)
+    --     vim.keymap.set('n', '<leader>dl', function() dap.run_last() end)
+    --   end,
+    -- },
+    { -- Markdown renderer
+      'MeanderingProgrammer/render-markdown.nvim',
+      dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
+      ft = { 'markdown' },
+      config = function()
+        require('render-markdown').setup({ completions = { lsp = { enabled = true } } })
+      end,
+    },
+    -- Auto-close punctuation pairs
+    { 'windwp/nvim-autopairs', event = 'InsertEnter', config = true },
+    -- Surround words/expressions/etc with punctuation pairs
+    { 'kylechui/nvim-surround', version = '*', event = 'InsertEnter', config = true },
+    -- Git gutter visualization
+    { 'lewis6991/gitsigns.nvim', event = 'VeryLazy', config = true },
+    { -- Color scheme
+      'Shatur/neovim-ayu',
+      lazy = false,
+      priority = 1000,
+      config = function()
+        local colors = require('ayu.colors')
+        colors.generate(true) -- Mirage colors
+        require('ayu').setup({
+          overrides = {
+            Normal = { bg = 'None' },
+            SignColumn = { bg = 'None' },
+            Folded = { bg = 'None', fg = colors.fg, bold = true, italic = true },
+            FoldColumn = { bg = 'None' },
+            CursorLine = { bg = 'None' },
+            CursorColumn = { bg = 'None' },
+            VertSplit = { bg = 'None' },
+            TelescopeNormal = { bg = colors.bg }, -- Make Telescope pop-ups opaque
+          },
+        })
+        vim.cmd.colorscheme('ayu-mirage')
+      end,
+    },
+  },
+  -- Configure any other settings here. See the documentation for more details.
+  install = { colorscheme = { 'habamax' } }, -- Color scheme used when installing plugins
+  checker = { enabled = true }, -- Automatically check for plugin updates
+})
+
+local capabilities = require('cmp_nvim_lsp').default_capabilities()
+local disable_lsp_fmt = function(client)
+  client.server_capabilities.documentFormattingProvider = false -- Defer to null-ls
+end
+
+-- rust-analyzer with clippy
+vim.lsp.config('rust_analyzer', {
+  capabilities = capabilities,
+  on_attach = disable_lsp_fmt,
+  settings = {
+    ['rust-analyzer'] = {
+      checkOnSave = { command = 'clippy' },
+      -- Fix completions inside procedural macros like `#[tokio::test]` (slower)
+      procMacro = { enable = true },
+    },
+  },
+})
+vim.lsp.enable('rust_analyzer')
+
+-- Pyright and Ruff LSPs (Ruff also formats)
+vim.lsp.config('pyright', {
+  capabilities = capabilities,
+  settings = { python = { analysis = { typeCheckingMode = 'strict' } } },
+})
+vim.lsp.enable('pyright')
+
+vim.lsp.config('ruff', { capabilities = capabilities })
+vim.lsp.enable('ruff')
+
+-- Lua LSP
+vim.lsp.config('lua_ls', {
+  capabilities = capabilities,
+  on_attach = disable_lsp_fmt,
+  settings = { Lua = { diagnostics = { globals = { 'vim' } }, telemetry = false } },
+})
+vim.lsp.enable('lua_ls')
+
+-- Go LSP (also formats)
+vim.lsp.config('gopls', {
+  capabilities = capabilities,
+  settings = { gopls = { staticcheck = true, buildFlags = { '-tags=dev' } } },
+})
+vim.lsp.enable('gopls')
+
+-- TS(X) LSP
+vim.lsp.config('tsserver', {
+  cmd = { 'typescript-language-server', '--stdio' },
+  filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  root_markers = { 'package.json', 'tsconfig.json', '.git' },
+  capabilities = capabilities,
+  on_attach = disable_lsp_fmt,
+})
+vim.lsp.enable('tsserver')
+
+-- Format files with these extensions on save
+vim.api.nvim_create_autocmd('BufWritePre', {
+  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx' },
+  callback = function() vim.lsp.buf.format({ async = false }) end,
+})
+
+-- Format Python files on save even if the .py is removed
+vim.api.nvim_create_autocmd('BufWritePre', {
+  callback = function()
+    if vim.bo.filetype == 'python' then vim.lsp.buf.format({ async = false }) end
+  end,
+})
