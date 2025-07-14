@@ -134,42 +134,46 @@ require('lazy').setup({
       },
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
-        null_ls.setup({
-          sources = {
-            -- Built-ins seem to need to go first
-            -- TypeScript and many others
-            null_ls.builtins.formatting.prettierd,
-            require('none-ls.code_actions.eslint_d'),
-            require('none-ls.diagnostics.eslint_d'),
-            null_ls.builtins.formatting.stylua, -- Lua
-            null_ls.register({ -- Rust (using nightly for formatting only)
-              name = 'rustfmt',
-              method = null_ls.methods.FORMATTING,
-              filetypes = { 'rust' },
-              generator = null_ls.formatter({
-                command = 'rustup',
-                args = { 'run', 'nightly', 'rustfmt', '--edition', '2024', '--emit=stdout' },
-                to_stdin = true,
-              }),
+        local sources = {
+          -- Built-ins seem to need to go first
+          null_ls.builtins.formatting.prettierd, -- TypeScript and many others
+          null_ls.builtins.formatting.stylua, -- Lua
+          null_ls.register({ -- Rust (using nightly for formatting only)
+            name = 'rustfmt',
+            method = null_ls.methods.FORMATTING,
+            filetypes = { 'rust' },
+            generator = null_ls.formatter({
+              command = 'rustup',
+              args = { 'run', 'nightly', 'rustfmt', '--edition', '2024', '--emit=stdout' },
+              to_stdin = true,
             }),
-            -- null_ls.register({ -- More configurable Lua
-            --          name = 'lua-format',
-            --          method = null_ls.methods.FORMATTING,
-            --          filetypes = {'lua'},
-            --          generator = null_ls.formatter({command = 'lua-format', to_stdin = true}),
-            --        }),
-            null_ls.register({ -- Reorder Python imports using Ruff
-              name = 'ruff_imports',
-              method = null_ls.methods.FORMATTING,
-              filetypes = { 'python' },
-              generator = null_ls.formatter({
-                command = 'ruff',
-                args = { 'check', '-', '--select', 'I', '--fix' },
-                to_stdin = true,
-              }),
+          }),
+          -- null_ls.register({ -- More configurable Lua
+          --          name = 'lua-format',
+          --          method = null_ls.methods.FORMATTING,
+          --          filetypes = {'lua'},
+          --          generator = null_ls.formatter({command = 'lua-format', to_stdin = true}),
+          --        }),
+          null_ls.register({ -- Reorder Python imports using Ruff
+            name = 'ruff_imports',
+            method = null_ls.methods.FORMATTING,
+            filetypes = { 'python' },
+            generator = null_ls.formatter({
+              command = 'ruff',
+              args = { 'check', '-', '--select', 'I', '--fix' },
+              to_stdin = true,
             }),
-          },
-        })
+          }),
+        }
+        -- Only include ESLint if it's set up in the project
+        if
+          vim.fn.filereadable('package.json') == 1
+          and table.concat(vim.fn.readfile('package.json'), '\n'):match('eslint')
+        then
+          table.insert(sources, require('none-ls.code_actions.eslint_d'))
+          table.insert(sources, require('none-ls.diagnostics.eslint_d'))
+        end
+        null_ls.setup({ sources = sources })
       end,
     },
     { -- Syntax parser
