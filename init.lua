@@ -50,6 +50,8 @@ local filetype_colorcolumn = {
   c = '80',
   typescript = '100',
   typescriptreact = '100',
+  html = '100',
+  css = '100',
   text = '80',
   markdown = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
@@ -130,7 +132,7 @@ require('lazy').setup({
       'nvimtools/none-ls.nvim',
       dependencies = {
         'nvim-lua/plenary.nvim',
-        'nvimtools/none-ls-extras.nvim', -- For eslint_d
+        -- 'nvimtools/none-ls-extras.nvim', -- For eslint_d
       },
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
@@ -166,13 +168,13 @@ require('lazy').setup({
           }),
         }
         -- Only include ESLint if it's set up in the project
-        if
-          vim.fn.filereadable('package.json') == 1
-          and table.concat(vim.fn.readfile('package.json'), '\n'):match('eslint')
-        then
-          table.insert(sources, require('none-ls.code_actions.eslint_d'))
-          table.insert(sources, require('none-ls.diagnostics.eslint_d'))
-        end
+        -- if
+        --   vim.fn.filereadable('package.json') == 1
+        --   and table.concat(vim.fn.readfile('package.json'), '\n'):match('eslint')
+        -- then
+        --   table.insert(sources, require('none-ls.code_actions.eslint_d'))
+        --   table.insert(sources, require('none-ls.diagnostics.eslint_d'))
+        -- end
         null_ls.setup({ sources = sources })
       end,
     },
@@ -190,6 +192,8 @@ require('lazy').setup({
             'python',
             'typescript',
             'tsx',
+            'html',
+            'css',
             'markdown',
             'markdown_inline',
           },
@@ -271,6 +275,12 @@ require('lazy').setup({
       config = function()
         require('render-markdown').setup({ completions = { lsp = { enabled = true } } })
       end,
+    },
+    { -- Auto-close and auto-rename HTML tags
+      'windwp/nvim-ts-autotag',
+      event = 'InsertEnter',
+      dependencies = 'nvim-treesitter/nvim-treesitter',
+      config = true,
     },
     -- Auto-close punctuation pairs
     { 'windwp/nvim-autopairs', event = 'InsertEnter', config = true },
@@ -360,9 +370,19 @@ vim.lsp.config('tsserver', {
 })
 vim.lsp.enable('tsserver')
 
+-- HTML, CSS, JSON, and ESLint from vscode-langservers-extracted
+vim.lsp.config('html', { capabilities = capabilities, on_attach = disable_lsp_fmt })
+vim.lsp.config('cssls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
+vim.lsp.config('jsonls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
+vim.lsp.config('eslint', { capabilities = capabilities })
+vim.lsp.enable('html')
+vim.lsp.enable('cssls')
+vim.lsp.enable('jsonls')
+vim.lsp.enable('eslint')
+
 -- Format files with these extensions on save
 vim.api.nvim_create_autocmd('BufWritePre', {
-  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx' },
+  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx', '*.html', '*.css', '*.json' },
   callback = function() vim.lsp.buf.format({ async = false }) end,
 })
 
