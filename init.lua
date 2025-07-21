@@ -8,8 +8,8 @@ vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
 vim.o.foldmethod = 'indent' -- Fold blocks by indent level
 vim.o.foldenable = false -- Disable folding by default
-vim.o.spell = true -- Spellcheck
-vim.o.spelllang = 'en_us' -- Japanese is more complicated, should likely just be ignored
+-- vim.o.spell = true -- Spellcheck
+-- vim.o.spelllang = 'en_us' -- Japanese is more complicated, should likely just be ignored
 
 -- General keybindings
 vim.keymap.set('i', '<F10>', '<Esc>')
@@ -107,6 +107,7 @@ require('lazy').setup({
         vim.keymap.set('n', '<leader>rn', '<cmd>Lspsaga rename<CR>')
         vim.keymap.set('n', '<leader>gd', '<cmd>Lspsaga goto_definition<CR>')
         vim.keymap.set('n', '<leader>fr', '<cmd>Lspsaga finder<CR>')
+        -- vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_actions, {})
       end,
     },
     { -- Auto-completion
@@ -133,13 +134,33 @@ require('lazy').setup({
       dependencies = {
         'nvim-lua/plenary.nvim',
         -- 'nvimtools/none-ls-extras.nvim', -- For eslint_d
+        'davidmh/cspell.nvim', -- For spell checking with cspell
       },
+      -- Cspell setup
+      opts = function(_, opts)
+        local cspell = require('cspell')
+        opts.sources = opts.sources or {}
+        table.insert(
+          opts.sources,
+          cspell.diagnostics.with({
+            diagnostics_postprocess = function(diagnostic)
+              diagnostic.severity = vim.diagnostic.severity.HINT
+            end,
+          })
+        )
+        table.insert(opts.sources, cspell.code_actions)
+      end,
+      -- General setup
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
+        local cspell = require('cspell')
+        local cspell_config = { cspell_config_dirs = { '~/.config/cspell/' } }
         local sources = {
           -- Built-ins seem to need to go first
           null_ls.builtins.formatting.prettierd, -- TypeScript and many others
           null_ls.builtins.formatting.stylua, -- Lua
+          cspell.diagnostics.with({ config = cspell_config }),
+          cspell.code_actions.with({ config = cspell_config }),
           null_ls.register({ -- Rust (using nightly for formatting only)
             name = 'rustfmt',
             method = null_ls.methods.FORMATTING,
@@ -316,10 +337,19 @@ require('lazy').setup({
   checker = { enabled = true }, -- Automatically check for plugin updates
 })
 
+-- General LSP setup
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
 local disable_lsp_fmt = function(client)
   client.server_capabilities.documentFormattingProvider = false -- Defer to null-ls
 end
+
+-- Keybindings that need an LSP attached first
+vim.api.nvim_create_autocmd('LspAttach', {
+  callback = function(args)
+    local bufnr = args.buf
+    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, { buffer = bufnr })
+  end,
+})
 
 -- rust-analyzer with clippy
 vim.lsp.config('rust_analyzer', {
