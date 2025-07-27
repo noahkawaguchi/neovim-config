@@ -8,8 +8,6 @@ vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
 vim.o.foldmethod = 'indent' -- Fold blocks by indent level
 vim.o.foldenable = false -- Disable folding by default
--- vim.o.spell = true -- Spellcheck
--- vim.o.spelllang = 'en_us' -- Japanese is more complicated, should likely just be ignored
 
 -- General keybindings
 vim.keymap.set('i', '<F10>', '<Esc>')
@@ -69,7 +67,7 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'typescriptreact', 'css' },
+  pattern = { 'lua', 'typescript', 'typescriptreact', 'css' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
@@ -166,7 +164,7 @@ require('lazy').setup({
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
         local cspell = require('cspell')
-        local cspell_config = { cspell_config_dirs = { '~/.config/cspell/' } }
+        local cspell_config = { cspell_config_dirs = { '~/.config/CSPELL_GLOBAL/' } }
         local sources = {
           -- Built-ins seem to need to go first
           null_ls.builtins.formatting.prettierd, -- TypeScript and many others
@@ -255,6 +253,16 @@ require('lazy').setup({
           pattern = { 'TelescopePrompt', 'TelescopeResults', 'TelescopePreview' },
           callback = function() vim.wo.colorcolumn = '' end,
         })
+      end,
+    },
+    { -- Replacement for deprecated telescope code actions popup
+      'aznhe21/actions-preview.nvim',
+      event = 'LspAttach',
+      dependencies = { 'nvim-telescope/telescope.nvim' },
+      config = function()
+        local actions_preview = require('actions-preview')
+        actions_preview.setup({ telescope = { layout_strategy = 'vertical' } })
+        vim.keymap.set('n', '<leader>ca', actions_preview.code_actions, { silent = true })
       end,
     },
     -- { -- Debugger frontend
@@ -354,14 +362,6 @@ local capabilities = require('cmp_nvim_lsp').default_capabilities()
 local disable_lsp_fmt = function(client)
   client.server_capabilities.documentFormattingProvider = false -- Defer to null-ls
 end
-
--- Keybindings that need an LSP attached first
-vim.api.nvim_create_autocmd('LspAttach', {
-  callback = function(args)
-    local bufnr = args.buf
-    vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_action, { buffer = bufnr })
-  end,
-})
 
 -- rust-analyzer with clippy
 vim.lsp.config('rust_analyzer', {
