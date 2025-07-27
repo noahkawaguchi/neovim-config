@@ -52,6 +52,7 @@ local filetype_colorcolumn = {
   typescriptreact = '100',
   html = '100',
   css = '100',
+  json = '100',
   text = '80',
   markdown = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
@@ -62,6 +63,17 @@ vim.api.nvim_create_autocmd('FileType', {
   pattern = '*',
   callback = function()
     vim.opt_local.colorcolumn = filetype_colorcolumn[vim.bo.filetype] or '80,100'
+  end,
+})
+
+-- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
+-- mode
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'typescriptreact', 'css' },
+  callback = function()
+    vim.bo.expandtab = true
+    vim.bo.shiftwidth = 2
+    vim.bo.tabstop = 2
   end,
 })
 
