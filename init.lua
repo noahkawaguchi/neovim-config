@@ -8,12 +8,15 @@ vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
 vim.o.foldmethod = 'indent' -- Fold blocks by indent level
 vim.o.foldenable = false -- Disable folding by default
+vim.o.list = true -- Trailing whitespace
+vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for trailing whitespace
 
 -- General keybindings
-vim.keymap.set('i', '<F10>', '<Esc>')
-vim.keymap.set('i', '<F12>', '<C-o>A')
 vim.keymap.set('n', '<F8>', '20<C-y>')
 vim.keymap.set('n', '<F9>', '20<C-e>')
+vim.keymap.set({ 'n', 'i', 'v', 'x', 's', 'o', 'c', 't' }, '<F10>', '<Esc>')
+vim.keymap.set('i', '<F12>', '<C-o>A')
+vim.keymap.set('n', '<F12>', '<C-w>w')
 
 -- General commands
 vim.api.nvim_create_user_command('Bx', 'w | bd', { desc = 'Write and close buffer' })
@@ -51,6 +54,7 @@ local filetype_colorcolumn = {
   html = '100',
   css = '100',
   json = '100',
+  jsonc = '100',
   text = '80',
   markdown = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
@@ -67,13 +71,32 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'lua', 'typescript', 'typescriptreact', 'css' },
+  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
     vim.bo.tabstop = 2
   end,
 })
+
+-- Indentation preferences for SQL
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'sql' },
+  callback = function()
+    vim.bo.expandtab = true
+    vim.bo.shiftwidth = 4
+    vim.bo.tabstop = 4
+  end,
+})
+
+-- -- Indentation preferences for Go
+-- vim.api.nvim_create_autocmd('FileType', {
+--   pattern = { 'go' },
+--   callback = function()
+--     vim.bo.expandtab = false
+--     vim.bo.tabstop = 4
+--   end,
+-- })
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
@@ -117,7 +140,6 @@ require('lazy').setup({
         vim.keymap.set('n', '<leader>rn', '<cmd>Lspsaga rename<CR>')
         vim.keymap.set('n', '<leader>gd', '<cmd>Lspsaga goto_definition<CR>')
         vim.keymap.set('n', '<leader>fr', '<cmd>Lspsaga finder<CR>')
-        -- vim.keymap.set('n', '<leader>ca', vim.lsp.buf.code_actions, {})
       end,
     },
     { -- Auto-completion
@@ -241,7 +263,12 @@ require('lazy').setup({
       dependencies = { 'nvim-lua/plenary.nvim', 'nvim-treesitter/nvim-treesitter' },
       config = function()
         local builtin = require('telescope.builtin')
-        require('telescope').setup({ defaults = { layout_strategy = 'vertical' } })
+        require('telescope').setup({
+          defaults = {
+            layout_strategy = 'vertical',
+            mappings = { i = { ['<F10>'] = require('telescope.actions').close } },
+          },
+        })
 
         vim.keymap.set('n', '<leader>ff', builtin.find_files)
         vim.keymap.set('n', '<leader>fg', builtin.live_grep)
@@ -369,7 +396,7 @@ vim.lsp.config('rust_analyzer', {
   on_attach = disable_lsp_fmt,
   settings = {
     ['rust-analyzer'] = {
-      checkOnSave = { command = 'clippy' },
+      check = { command = 'clippy' },
       -- Fix completions inside procedural macros like `#[tokio::test]` (slower)
       procMacro = { enable = true },
     },
@@ -406,9 +433,11 @@ vim.lsp.enable('gopls')
 vim.lsp.config('tsserver', {
   cmd = { 'typescript-language-server', '--stdio' },
   filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
-  root_markers = { 'package.json', 'tsconfig.json', '.git' },
+  root_markers = { 'package.json', 'tsconfig.json' },
   capabilities = capabilities,
   on_attach = disable_lsp_fmt,
+  -- Prefer absolute import paths such as '@/pages/Home'
+  init_options = { preferences = { importModuleSpecifierPreference = 'non-relative' } },
 })
 vim.lsp.enable('tsserver')
 
@@ -424,7 +453,7 @@ vim.lsp.enable('eslint')
 
 -- Format files with these extensions on save
 vim.api.nvim_create_autocmd('BufWritePre', {
-  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx', '*.html', '*.css', '*.json' },
+  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx', '*.mts', '*.html', '*.css', '*.json' },
   callback = function() vim.lsp.buf.format({ async = false }) end,
 })
 
