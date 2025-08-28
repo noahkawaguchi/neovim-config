@@ -2,7 +2,6 @@
 vim.o.termguicolors = true -- Enable 24 bit RGB for terminal
 vim.o.number = true -- Line numbers
 vim.o.relativenumber = true
--- vim.o.tabstop = 4 -- Visual spaces per tab character
 vim.o.ignorecase = true -- Make searches case insensitive...
 vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
@@ -44,21 +43,24 @@ end
 
 -- Color different columns depending on the file type
 local filetype_colorcolumn = {
-  rust = '100',
-  go = '100',
-  lua = '100',
-  cpp = '100',
   c = '80',
-  typescript = '100',
-  typescriptreact = '100',
-  html = '100',
+  cpp = '100',
   css = '100',
+  gitcommit = colorcolumn_inclusive_range(51, 72), -- 50 char title, 72 col body
+  go = '100', -- Should be used in combination with golines due to different tab display sizes
+  html = '100',
   json = '100',
   jsonc = '100',
-  text = '80',
+  just = '100', -- Could be 80 for a more traditional make style
+  lua = '100',
+  make = '80', -- 80 matches C, but could be 100
   markdown = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
-  gitcommit = colorcolumn_inclusive_range(51, 72), -- 50 char title, 72 col body
+  rust = '100',
+  sql = '100', -- Could be 80 if more traditional
+  text = '80',
+  typescript = '100',
+  typescriptreact = '100',
 }
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -71,7 +73,7 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json' },
+  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json', 'markdown' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
@@ -79,9 +81,8 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- Indentation preferences for SQL
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'sql' },
+  pattern = { 'sql', 'python' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 4
@@ -89,14 +90,19 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- -- Indentation preferences for Go
--- vim.api.nvim_create_autocmd('FileType', {
---   pattern = { 'go' },
---   callback = function()
---     vim.bo.expandtab = false
---     vim.bo.tabstop = 4
---   end,
--- })
+-- Indentation preferences for Go (especially with the indent-blankline plugin and the golines
+-- formatter)
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'go' },
+  callback = function()
+    vim.opt_local.list = false -- So indent-blankline will display
+    vim.bo.expandtab = false
+    -- Set tabs to display as 4 columns here for readability, but break lines as if tabs were 8
+    -- columns using golines (via null-ls/none-ls plugin)
+    vim.bo.shiftwidth = 4
+    vim.bo.tabstop = 4
+  end,
+})
 
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
@@ -166,9 +172,9 @@ require('lazy').setup({
       dependencies = {
         'nvim-lua/plenary.nvim',
         -- 'nvimtools/none-ls-extras.nvim', -- For eslint_d
-        'davidmh/cspell.nvim', -- For spell checking with cspell
+        'davidmh/cspell.nvim', -- For spell checking with cspell (npm package)
       },
-      -- Cspell setup
+      -- cspell setup
       opts = function(_, opts)
         local cspell = require('cspell')
         opts.sources = opts.sources or {}
@@ -190,10 +196,12 @@ require('lazy').setup({
         local sources = {
           -- Built-ins seem to need to go first
           null_ls.builtins.formatting.prettierd, -- TypeScript and many others
-          null_ls.builtins.formatting.stylua, -- Lua
+          null_ls.builtins.formatting.stylua,
+          -- 100 columns, considering tabs to be 8 columns
+          null_ls.builtins.formatting.golines.with({ extra_args = { '-m', '100', '-t', '8' } }),
           cspell.diagnostics.with({ config = cspell_config }),
           cspell.code_actions.with({ config = cspell_config }),
-          null_ls.register({ -- Rust (using nightly for formatting only)
+          null_ls.register({ -- Using nightly Rust for formatting only
             name = 'rustfmt',
             method = null_ls.methods.FORMATTING,
             filetypes = { 'rust' },
@@ -269,12 +277,10 @@ require('lazy').setup({
             mappings = { i = { ['<F10>'] = require('telescope.actions').close } },
           },
         })
-
         vim.keymap.set('n', '<leader>ff', builtin.find_files)
         vim.keymap.set('n', '<leader>fg', builtin.live_grep)
         vim.keymap.set('n', '<leader>fb', builtin.buffers)
         vim.keymap.set('n', '<leader>fh', builtin.help_tags)
-
         -- Stop color column from showing in Telescope pop-up
         vim.api.nvim_create_autocmd('FileType', {
           pattern = { 'TelescopePrompt', 'TelescopeResults', 'TelescopePreview' },
@@ -356,6 +362,11 @@ require('lazy').setup({
     { 'kylechui/nvim-surround', version = '*', event = 'InsertEnter', config = true },
     -- Git gutter visualization
     { 'lewis6991/gitsigns.nvim', event = 'VeryLazy', config = true },
+    { -- Indentation guides
+      'lukas-reineke/indent-blankline.nvim',
+      main = 'ibl',
+      config = function() require('ibl').setup() end,
+    },
     { -- Color scheme
       'Shatur/neovim-ayu',
       lazy = false,
@@ -453,7 +464,18 @@ vim.lsp.enable('eslint')
 
 -- Format files with these extensions on save
 vim.api.nvim_create_autocmd('BufWritePre', {
-  pattern = { '*.rs', '*.go', '*.lua', '*.ts', '*.tsx', '*.mts', '*.html', '*.css', '*.json' },
+  pattern = {
+    '*.rs',
+    '*.go',
+    '*.lua',
+    '*.ts',
+    '*.tsx',
+    '*.mts',
+    '*.js',
+    '*.html',
+    '*.css',
+    '*.json',
+  },
   callback = function() vim.lsp.buf.format({ async = false }) end,
 })
 
