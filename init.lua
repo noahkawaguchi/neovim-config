@@ -480,8 +480,12 @@ vim.api.nvim_create_autocmd('BufWritePre', {
 })
 
 -- Format Python files on save even if the .py is removed
-vim.api.nvim_create_autocmd('BufWritePre', {
-  callback = function()
-    if vim.bo.filetype == 'python' then vim.lsp.buf.format({ async = false }) end
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'python',
+  callback = function(args)
+    vim.api.nvim_create_autocmd('BufWritePre', {
+      buffer = args.buf,
+      callback = function() vim.lsp.buf.format({ async = false }) end,
+    })
   end,
 })
