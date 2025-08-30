@@ -73,7 +73,7 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json', 'markdown' },
+  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json', 'markdown', 'cpp' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
@@ -82,7 +82,7 @@ vim.api.nvim_create_autocmd('FileType', {
 })
 
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'sql', 'python' },
+  pattern = { 'sql', 'python', 'c' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 4
@@ -247,16 +247,18 @@ require('lazy').setup({
       config = function()
         require('nvim-treesitter.configs').setup({
           ensure_installed = {
-            'rust',
-            'go',
-            'lua',
-            'python',
-            'typescript',
-            'tsx',
-            'html',
+            'c',
+            'cpp',
             'css',
-            'markdown',
+            'go',
+            'html',
+            'lua',
             'markdown_inline',
+            'markdown',
+            'python',
+            'rust',
+            'tsx',
+            'typescript',
           },
           highlight = { enable = true },
         })
@@ -462,19 +464,27 @@ vim.lsp.enable('cssls')
 vim.lsp.enable('jsonls')
 vim.lsp.enable('eslint')
 
+-- C and C++ LSP (also formats using clang-format)
+vim.lsp.config('clangd', { capabilities = capabilities })
+vim.lsp.enable('clangd')
+
 -- Format files with these extensions on save
 vim.api.nvim_create_autocmd('BufWritePre', {
   pattern = {
-    '*.rs',
+    '*.c',
+    '*.cpp',
+    '*.css',
     '*.go',
+    '*.h',
+    '*.hpp',
+    '*.html',
+    '*.js',
+    '*.json',
     '*.lua',
+    '*.mts',
+    '*.rs',
     '*.ts',
     '*.tsx',
-    '*.mts',
-    '*.js',
-    '*.html',
-    '*.css',
-    '*.json',
   },
   callback = function() vim.lsp.buf.format({ async = false }) end,
 })
