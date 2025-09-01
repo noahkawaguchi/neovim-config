@@ -73,7 +73,7 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'lua', 'typescript', 'typescriptreact', 'css', 'json', 'markdown', 'cpp' },
+  pattern = { 'lua', 'typescript', 'typescriptreact', 'html', 'css', 'json', 'markdown', 'cpp' },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
@@ -366,6 +366,7 @@ require('lazy').setup({
     { 'lewis6991/gitsigns.nvim', event = 'VeryLazy', config = true },
     { -- Indentation guides
       'lukas-reineke/indent-blankline.nvim',
+      event = 'VeryLazy',
       main = 'ibl',
       config = function() require('ibl').setup() end,
     },
