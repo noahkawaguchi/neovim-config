@@ -46,6 +46,7 @@ local filetype_colorcolumn = {
   c = '80',
   cpp = '100',
   css = '100',
+  ['dap-repl'] = '',
   gitcommit = colorcolumn_inclusive_range(51, 72), -- 50 char title, 72 col body
   go = '100', -- Should be used in combination with golines due to different tab display sizes
   html = '100',
@@ -135,6 +136,8 @@ vim.g.maplocalleader = '\\'
 -- Set up lazy.nvim
 require('lazy').setup({
   spec = { -- Plugins go here
+    -- External package manager
+    { 'mason-org/mason.nvim', opts = {} },
     -- Basic LSP support
     { 'neovim/nvim-lspconfig' },
     { -- Enhanced LSP features
@@ -300,50 +303,48 @@ require('lazy').setup({
         vim.keymap.set('n', '<leader>ca', actions_preview.code_actions, { silent = true })
       end,
     },
-    -- { -- Debugger frontend
-    --   'mfussenegger/nvim-dap',
-    --   config = function()
-    --     local dap = require('dap')
-    --     dap.adapters.lldb = { type = 'executable', command = 'rust-lldb', name = 'lldb' }
-    --
-    --     dap.configurations.rust = {
-    --       {
-    --         name = 'Launch',
-    --         type = 'lldb',
-    --         request = 'launch',
-    --         program = function()
-    --           return vim.fn.input(
-    --             'Path to executable: ',
-    --             vim.fn.getcwd() .. '/target/debug/',
-    --             'file'
-    --           )
-    --         end,
-    --         cwd = '${workspaceFolder}',
-    --         stopOnEntry = false,
-    --         args = {},
-    --         runInTerminal = false,
-    --       },
-    --     }
-    --
-    --     vim.keymap.set('n', '<F5>', function() dap.continue() end)
-    --     vim.keymap.set('n', '<F10>', function() dap.step_over() end)
-    --     vim.keymap.set('n', '<F11>', function() dap.step_into() end)
-    --     vim.keymap.set('n', '<F12>', function() dap.step_out() end)
-    --     vim.keymap.set('n', '<leader>b', function() dap.toggle_breakpoint() end)
-    --     vim.keymap.set(
-    --       'n',
-    --       '<leader>B',
-    --       function() dap.set_breakpoint(vim.fn.input('Breakpoint condition: ')) end
-    --     )
-    --     vim.keymap.set(
-    --       'n',
-    --       '<leader>lp',
-    --       function() dap.set_breakpoint(nil, nil, vim.fn.input('Log point message: ')) end
-    --     )
-    --     vim.keymap.set('n', '<leader>dr', function() dap.repl.open() end)
-    --     vim.keymap.set('n', '<leader>dl', function() dap.run_last() end)
-    --   end,
-    -- },
+    { -- Debugger frontend
+      'mfussenegger/nvim-dap',
+      config = function()
+        local dap = require('dap')
+
+        dap.adapters.codelldb = { type = 'executable', command = 'codelldb' }
+        dap.configurations.rust = {
+          {
+            name = 'Launch',
+            type = 'codelldb',
+            request = 'launch',
+            program = function()
+              return vim.fn.input(
+                'Path to executable: ',
+                vim.fn.getcwd() .. '/target/debug/',
+                'file'
+              )
+            end,
+            cwd = '${workspaceFolder}',
+            stopOnEntry = false,
+          },
+        }
+
+        vim.keymap.set('n', '<F5>', dap.continue)
+        vim.keymap.set('n', '<F6>', function()
+          dap.repl.open()
+          vim.cmd('winc w | startinsert')
+        end)
+        vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint)
+        vim.keymap.set('n', '<leader>dr', dap.repl.toggle)
+      end,
+    },
+    { -- Bridge between mason.nvim and nvim-dap
+      'jay-babu/mason-nvim-dap.nvim',
+      dependencies = { 'mason-org/mason.nvim', 'mfussenegger/nvim-dap' },
+      config = function() require('mason-nvim-dap').setup({ ensure_installed = { 'codelldb' } }) end,
+    },
+    { -- Inline values for nvim-dap
+      'theHamsta/nvim-dap-virtual-text',
+      dependencies = { 'mfussenegger/nvim-dap', 'nvim-treesitter/nvim-treesitter' },
+      config = function() require('nvim-dap-virtual-text').setup() end,
+    },
     { -- Markdown renderer
       'MeanderingProgrammer/render-markdown.nvim',
       dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
@@ -387,6 +388,8 @@ require('lazy').setup({
             CursorColumn = { bg = 'None' },
             VertSplit = { bg = 'None' },
             TelescopeNormal = { bg = colors.bg }, -- Make Telescope pop-ups opaque
+            -- For theHamsta/nvim-dap-virtual-text
+            NvimDapVirtualText = { fg = colors.comment, italic = true },
           },
         })
         vim.cmd.colorscheme('ayu-mirage')
