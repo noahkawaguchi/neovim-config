@@ -204,22 +204,16 @@ require('lazy').setup({
           null_ls.builtins.formatting.golines.with({ extra_args = { '-m', '100', '-t', '8' } }),
           cspell.diagnostics.with({ config = cspell_config }),
           cspell.code_actions.with({ config = cspell_config }),
-          null_ls.register({ -- Using nightly Rust for formatting only
-            name = 'rustfmt',
-            method = null_ls.methods.FORMATTING,
-            filetypes = { 'rust' },
-            generator = null_ls.formatter({
-              command = 'rustup',
-              args = { 'run', 'nightly', 'rustfmt', '--edition', '2024', '--emit=stdout' },
-              to_stdin = true,
-            }),
-          }),
-          -- null_ls.register({ -- More configurable Lua
-          --          name = 'lua-format',
-          --          method = null_ls.methods.FORMATTING,
-          --          filetypes = {'lua'},
-          --          generator = null_ls.formatter({command = 'lua-format', to_stdin = true}),
-          --        }),
+          -- null_ls.register({ -- Using nightly Rust for formatting only
+          --   name = 'rustfmt',
+          --   method = null_ls.methods.FORMATTING,
+          --   filetypes = { 'rust' },
+          --   generator = null_ls.formatter({
+          --     command = 'rustup',
+          --     args = { 'run', 'nightly', 'rustfmt', '--edition=2024', '--emit=stdout' },
+          --     to_stdin = true,
+          --   }),
+          -- }),
           null_ls.register({ -- Reorder Python imports using Ruff
             name = 'ruff_imports',
             method = null_ls.methods.FORMATTING,
@@ -323,6 +317,13 @@ require('lazy').setup({
             end,
             cwd = '${workspaceFolder}',
             stopOnEntry = false,
+            -- Pretty printing for Rust types
+            initCommands = {
+              'command script import '
+                .. '~/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/etc/lldb_lookup.py',
+              'command source -s 0 '
+                .. '~/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/etc/lldb_commands',
+            },
           },
         }
 
@@ -407,15 +408,16 @@ local disable_lsp_fmt = function(client)
   client.server_capabilities.documentFormattingProvider = false -- Defer to null-ls
 end
 
--- rust-analyzer with clippy
+-- rust-analyzer with clippy and rustfmt
 vim.lsp.config('rust_analyzer', {
   capabilities = capabilities,
-  on_attach = disable_lsp_fmt,
   settings = {
     ['rust-analyzer'] = {
       check = { command = 'clippy' },
       -- Fix completions inside procedural macros like `#[tokio::test]` (slower)
       procMacro = { enable = true },
+      -- Use nightly for formatting only
+      rustfmt = { overrideCommand = { 'rustfmt', '+nightly', '--edition=2024' } },
     },
   },
 })
