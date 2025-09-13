@@ -1,11 +1,12 @@
 -- General config
-vim.o.termguicolors = true -- Enable 24 bit RGB for terminal
+vim.o.termguicolors = true -- Enable 24-bit RGB for terminal
 vim.o.number = true -- Line numbers
 vim.o.relativenumber = true
 vim.o.ignorecase = true -- Make searches case insensitive...
 vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
-vim.o.foldmethod = 'indent' -- Fold blocks by indent level
+-- Fold blocks by indent level (unless changed later by treesitter config)
+vim.o.foldmethod = 'indent'
 vim.o.foldenable = false -- Disable folding by default
 vim.o.list = true -- Trailing whitespace
 vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for trailing whitespace
@@ -191,7 +192,7 @@ require('lazy').setup({
         )
         table.insert(opts.sources, cspell.code_actions)
       end,
-      -- General setup
+      -- General none-ls/null-ls setup
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
         local cspell = require('cspell')
@@ -204,16 +205,6 @@ require('lazy').setup({
           null_ls.builtins.formatting.golines.with({ extra_args = { '-m', '100', '-t', '8' } }),
           cspell.diagnostics.with({ config = cspell_config }),
           cspell.code_actions.with({ config = cspell_config }),
-          -- null_ls.register({ -- Using nightly Rust for formatting only
-          --   name = 'rustfmt',
-          --   method = null_ls.methods.FORMATTING,
-          --   filetypes = { 'rust' },
-          --   generator = null_ls.formatter({
-          --     command = 'rustup',
-          --     args = { 'run', 'nightly', 'rustfmt', '--edition=2024', '--emit=stdout' },
-          --     to_stdin = true,
-          --   }),
-          -- }),
           null_ls.register({ -- Reorder Python imports using Ruff
             name = 'ruff_imports',
             method = null_ls.methods.FORMATTING,
@@ -280,7 +271,7 @@ require('lazy').setup({
         vim.keymap.set('n', '<leader>fg', builtin.live_grep)
         vim.keymap.set('n', '<leader>fb', builtin.buffers)
         vim.keymap.set('n', '<leader>fh', builtin.help_tags)
-        -- Stop color column from showing in Telescope pop-up
+        -- Stop colorcolumn from showing in Telescope popups
         vim.api.nvim_create_autocmd('FileType', {
           pattern = { 'TelescopePrompt', 'TelescopeResults', 'TelescopePreview' },
           callback = function() vim.wo.colorcolumn = '' end,
@@ -301,7 +292,6 @@ require('lazy').setup({
       'mfussenegger/nvim-dap',
       config = function()
         local dap = require('dap')
-
         dap.adapters.codelldb = { type = 'executable', command = 'codelldb' }
         dap.configurations.rust = {
           {
@@ -326,7 +316,6 @@ require('lazy').setup({
             },
           },
         }
-
         vim.keymap.set('n', '<F5>', dap.continue)
         vim.keymap.set('n', '<F6>', function()
           dap.repl.open()
@@ -341,9 +330,10 @@ require('lazy').setup({
       dependencies = { 'mason-org/mason.nvim', 'mfussenegger/nvim-dap' },
       config = function() require('mason-nvim-dap').setup({ ensure_installed = { 'codelldb' } }) end,
     },
-    { -- Inline values for nvim-dap
+    { -- Display inline values for nvim-dap
       'theHamsta/nvim-dap-virtual-text',
       dependencies = { 'mfussenegger/nvim-dap', 'nvim-treesitter/nvim-treesitter' },
+      event = 'VeryLazy',
       config = function() require('nvim-dap-virtual-text').setup() end,
     },
     { -- Markdown renderer
