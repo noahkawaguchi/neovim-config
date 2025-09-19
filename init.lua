@@ -438,17 +438,40 @@ vim.lsp.config('gopls', {
 })
 vim.lsp.enable('gopls')
 
--- TS(X) LSP
+local ts_js_filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' }
+
+-- TS(X) LSP for Node/tsc
 vim.lsp.config('tsserver', {
   cmd = { 'typescript-language-server', '--stdio' },
-  filetypes = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+  filetypes = ts_js_filetypes,
   root_markers = { 'package.json', 'tsconfig.json' },
   capabilities = capabilities,
   on_attach = disable_lsp_fmt,
   -- Prefer absolute import paths such as '@/pages/Home'
   init_options = { preferences = { importModuleSpecifierPreference = 'non-relative' } },
 })
-vim.lsp.enable('tsserver')
+-- vim.lsp.enable('tsserver')
+
+-- Deno LSP (also formats)
+vim.lsp.config('denols', {
+  cmd = { 'deno', 'lsp' },
+  filetypes = ts_js_filetypes,
+  root_markers = { 'deno.json', 'deno.jsonc', 'deno.lock' },
+  capabilities = capabilities,
+})
+-- vim.lsp.enable('denols')
+
+-- Only enable denols or tsserver depending on the project type
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = ts_js_filetypes,
+  callback = function(args)
+    if vim.fs.root(args.buf, { 'deno.json', 'deno.jsonc' }) then
+      vim.lsp.enable('denols', args.buf)
+    else
+      vim.lsp.enable('tsserver', args.buf)
+    end
+  end,
+})
 
 -- HTML, CSS, JSON, and ESLint from vscode-langservers-extracted
 vim.lsp.config('html', { capabilities = capabilities, on_attach = disable_lsp_fmt })
@@ -476,6 +499,7 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     '*.html',
     '*.js',
     '*.json',
+    '*.jsonc',
     '*.lua',
     '*.mts',
     '*.rs',
