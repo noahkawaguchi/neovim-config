@@ -1,15 +1,17 @@
+----------------------------------------------------------------------------------------------------
 -- General config
-vim.o.termguicolors = true -- Enable 24-bit RGB for terminal
+----------------------------------------------------------------------------------------------------
+
+vim.o.termguicolors = true -- Enable 24-bit RGB for the terminal
 vim.o.number = true -- Line numbers
-vim.o.relativenumber = true
+vim.o.relativenumber = true -- Make line numbers relative to the cursor
 vim.o.ignorecase = true -- Make searches case insensitive...
 vim.o.smartcase = true -- ...unless they contain a capital letter
 vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
--- Fold blocks by indent level (unless changed later by treesitter config)
-vim.o.foldmethod = 'indent'
-vim.o.foldenable = false -- Disable folding by default
-vim.o.list = true -- Trailing whitespace
-vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for trailing whitespace
+vim.o.foldmethod = 'indent' -- Fold by indent level (unless changed later by treesitter config)
+vim.o.foldenable = false -- Don't immediately fold by default
+vim.o.list = true -- Indicators for trailing whitespace
+vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for tabs and trailing whitespace
 
 -- General keybindings
 vim.keymap.set('n', '<F8>', '20<C-y>')
@@ -106,6 +108,10 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
+----------------------------------------------------------------------------------------------------
+-- Plugins (lazy.nvim)
+----------------------------------------------------------------------------------------------------
+
 -- Bootstrap lazy.nvim
 local lazypath = vim.fn.stdpath('data') .. '/lazy/lazy.nvim'
 if not (vim.uv or vim.loop).fs_stat(lazypath) then
@@ -155,10 +161,7 @@ require('lazy').setup({
     { -- Auto-completion
       'hrsh7th/nvim-cmp',
       event = 'InsertEnter',
-      dependencies = {
-        'hrsh7th/cmp-nvim-lsp', -- LSP source
-        'L3MON4D3/LuaSnip', -- Snippets
-      },
+      dependencies = { 'hrsh7th/cmp-nvim-lsp', 'L3MON4D3/LuaSnip' }, -- LSP source and snippets
       config = function()
         local cmp = require('cmp')
         cmp.setup({
@@ -173,11 +176,8 @@ require('lazy').setup({
     },
     { -- Formatting and linting
       'nvimtools/none-ls.nvim',
-      dependencies = {
-        'nvim-lua/plenary.nvim',
-        -- 'nvimtools/none-ls-extras.nvim', -- For eslint_d
-        'davidmh/cspell.nvim', -- For spell checking with cspell (npm package)
-      },
+      -- Spell checking with cspell uses the cspell npm package
+      dependencies = { 'nvim-lua/plenary.nvim', 'davidmh/cspell.nvim' },
       -- cspell setup
       opts = function(_, opts)
         local cspell = require('cspell')
@@ -216,14 +216,6 @@ require('lazy').setup({
             }),
           }),
         }
-        -- Only include ESLint if it's set up in the project
-        -- if
-        --   vim.fn.filereadable('package.json') == 1
-        --   and table.concat(vim.fn.readfile('package.json'), '\n'):match('eslint')
-        -- then
-        --   table.insert(sources, require('none-ls.code_actions.eslint_d'))
-        --   table.insert(sources, require('none-ls.diagnostics.eslint_d'))
-        -- end
         null_ls.setup({ sources = sources })
       end,
     },
@@ -392,6 +384,10 @@ require('lazy').setup({
   checker = { enabled = true }, -- Automatically check for plugin updates
 })
 
+----------------------------------------------------------------------------------------------------
+-- LSPs
+----------------------------------------------------------------------------------------------------
+
 -- General LSP setup
 local capabilities = require('cmp_nvim_lsp').default_capabilities()
 local disable_lsp_fmt = function(client)
@@ -450,7 +446,6 @@ vim.lsp.config('tsserver', {
   -- Prefer absolute import paths such as '@/pages/Home'
   init_options = { preferences = { importModuleSpecifierPreference = 'non-relative' } },
 })
--- vim.lsp.enable('tsserver')
 
 -- Deno LSP (also formats)
 vim.lsp.config('denols', {
@@ -459,7 +454,6 @@ vim.lsp.config('denols', {
   root_markers = { 'deno.json', 'deno.jsonc', 'deno.lock' },
   capabilities = capabilities,
 })
--- vim.lsp.enable('denols')
 
 -- Only enable denols or tsserver depending on the project type
 vim.api.nvim_create_autocmd('FileType', {
@@ -473,7 +467,7 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- HTML, CSS, JSON, and ESLint from vscode-langservers-extracted
+-- HTML, CSS, JSON, and ESLint LSPs from vscode-langservers-extracted
 vim.lsp.config('html', { capabilities = capabilities, on_attach = disable_lsp_fmt })
 vim.lsp.config('cssls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
 vim.lsp.config('jsonls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
@@ -483,9 +477,13 @@ vim.lsp.enable('cssls')
 vim.lsp.enable('jsonls')
 vim.lsp.enable('eslint')
 
--- C and C++ LSP (also formats using clang-format)
+-- C and C++ LSP (also formats using clang-format and lints with clang-tidy)
 vim.lsp.config('clangd', { capabilities = capabilities })
 vim.lsp.enable('clangd')
+
+----------------------------------------------------------------------------------------------------
+-- Formatting on save
+----------------------------------------------------------------------------------------------------
 
 -- Format files with these extensions on save
 vim.api.nvim_create_autocmd('BufWritePre', {
