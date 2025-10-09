@@ -41,12 +41,22 @@ vim.o.foldenable = false -- Don't immediately fold by default
 vim.o.list = true -- Indicators for trailing whitespace
 vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for tabs and trailing whitespace
 
--- General keybindings
+-- General key bindings
 vim.keymap.set('n', '<F8>', '20<C-y>')
 vim.keymap.set('n', '<F9>', '20<C-e>')
 vim.keymap.set({ 'n', 'i', 'v', 'x', 's', 'o', 'c', 't' }, '<F10>', '<Esc>')
 vim.keymap.set('i', '<F12>', '<C-o>A')
 vim.keymap.set('n', '<F12>', '<C-w>w')
+
+vim.keymap.set('n', '<leader>m', function()
+  local word = vim.fn.expand('<cword>')
+  vim.fn.system({ 'man', '-w', word })
+  if vim.v.shell_error == 0 then
+    vim.cmd('Man ' .. word)
+  else
+    vim.notify(string.format('No man page found for "%s"', word), vim.log.levels.WARN)
+  end
+end, { desc = 'Open man page for word under cursor' })
 
 -- General commands
 vim.api.nvim_create_user_command('Bx', 'w | bd', { desc = 'Write and close buffer' })

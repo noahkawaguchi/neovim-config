@@ -1,4 +1,5 @@
 {
+  "flagWords": [],
   "words": [
     "termguicolors",
     "ignorecase",
@@ -54,9 +55,9 @@
     "rustlib",
     "winc",
     "startinsert",
-    "denols"
+    "denols",
+    "cword"
   ],
-  "flagWords": [],
-  "language": "en",
-  "version": "0.2"
+  "version": "0.2",
+  "language": "en"
 }
