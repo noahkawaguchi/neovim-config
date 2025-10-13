@@ -1,4 +1,6 @@
 {
+  "language": "en",
+  "version": "0.2",
   "flagWords": [],
   "words": [
     "termguicolors",
@@ -56,8 +58,10 @@
     "winc",
     "startinsert",
     "denols",
-    "cword"
-  ],
-  "version": "0.2",
-  "language": "en"
+    "cword",
+    "clippy",
+    "nvim",
+    "lldb",
+    "docstrings"
+  ]
 }

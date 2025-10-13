@@ -157,10 +157,22 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Set up lazy.nvim
 require('lazy').setup({
   spec = { -- Plugins go here
-    -- External package manager
-    { 'mason-org/mason.nvim', opts = {} },
+    { -- External package manager
+      'mason-org/mason.nvim',
+      opts = {},
+      -- Update the Mason registry when Mason is updated (doesn't install updates)
+      build = ':MasonUpdate',
+    },
     -- Basic LSP support
     { 'neovim/nvim-lspconfig' },
+    { -- Bridge between mason.nvim and nvim-lspconfig
+      'mason-org/mason-lspconfig.nvim',
+      dependencies = { 'mason-org/mason.nvim', 'neovim/nvim-lspconfig' },
+      opts = {
+        automatic_enable = false, -- Customize on_attach, capabilities, and such later
+        ensure_installed = { 'lua_ls', 'pyright' },
+      },
+    },
     { -- Enhanced LSP features
       'nvimdev/lspsaga.nvim',
       event = 'LspAttach',
@@ -232,6 +244,15 @@ require('lazy').setup({
         }
         null_ls.setup({ sources = sources })
       end,
+    },
+    { -- Bridge between mason.nvim and null-ls (none-ls)
+      'jay-babu/mason-null-ls.nvim',
+      event = { 'BufReadPre', 'BufNewFile' },
+      dependencies = { 'mason-org/mason.nvim', 'nvimtools/none-ls.nvim' },
+      opts = {
+        ensure_installed = { 'stylua', 'prettierd', 'golines' },
+        automatic_installation = true,
+      },
     },
     { -- Syntax parser
       'nvim-treesitter/nvim-treesitter',
