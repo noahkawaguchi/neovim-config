@@ -48,6 +48,9 @@ vim.keymap.set({ 'n', 'i', 'v', 'x', 's', 'o', 'c', 't' }, '<F10>', '<Esc>')
 vim.keymap.set('i', '<F12>', '<C-o>A')
 vim.keymap.set('n', '<F12>', '<C-w>w')
 
+vim.keymap.set('n', 'W', '20w')
+vim.keymap.set('n', 'B', '20b')
+
 -- `K` has similar behavior by default but is overridden when using LSPs
 vim.keymap.set('n', '<leader>m', function()
   local word = vim.fn.expand('<cword>')
