@@ -35,7 +35,7 @@ vim.o.number = true -- Line numbers
 vim.o.relativenumber = true -- Make line numbers relative to the cursor
 vim.o.ignorecase = true -- Make searches case insensitive...
 vim.o.smartcase = true -- ...unless they contain a capital letter
-vim.o.shellcmdflag = '-i -c' -- Load full normal zsh for shell commands (slower)
+vim.o.shellcmdflag = '-i -c' -- Load full normal shell configuration for shell commands (slower)
 vim.o.foldmethod = 'indent' -- Fold by indent level (unless changed later by treesitter config)
 vim.o.foldenable = false -- Don't immediately fold by default
 vim.o.list = true -- Indicators for trailing whitespace
@@ -48,6 +48,7 @@ vim.keymap.set({ 'n', 'i', 'v', 'x', 's', 'o', 'c', 't' }, '<F10>', '<Esc>')
 vim.keymap.set('i', '<F12>', '<C-o>A')
 vim.keymap.set('n', '<F12>', '<C-w>w')
 
+-- `K` has similar behavior by default but is overridden when using LSPs
 vim.keymap.set('n', '<leader>m', function()
   local word = vim.fn.expand('<cword>')
   vim.fn.system({ 'man', '-w', word })
@@ -112,7 +113,7 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- Indentation rules for filetypes where the LSP/formatter doesn't seem to change this in insert
+-- Indentation rules for file types where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
   pattern = { 'lua', 'typescript', 'typescriptreact', 'html', 'css', 'json', 'markdown', 'cpp' },
@@ -269,10 +270,10 @@ require('lazy').setup({
             mappings = { i = { ['<F10>'] = require('telescope.actions').close } },
           },
         })
-        vim.keymap.set('n', '<leader>ff', builtin.find_files)
-        vim.keymap.set('n', '<leader>fg', builtin.live_grep)
-        vim.keymap.set('n', '<leader>fb', builtin.buffers)
-        vim.keymap.set('n', '<leader>fh', builtin.help_tags)
+        vim.keymap.set('n', '<leader>ff', builtin.find_files, { desc = 'Find files' })
+        vim.keymap.set('n', '<leader>fg', builtin.live_grep, { desc = 'Live grep' })
+        vim.keymap.set('n', '<leader>fb', builtin.buffers, { desc = 'Find buffers' })
+        vim.keymap.set('n', '<leader>fh', builtin.help_tags, { desc = 'Find help' })
         -- Stop colorcolumn from showing in Telescope popups
         vim.api.nvim_create_autocmd('FileType', {
           pattern = { 'TelescopePrompt', 'TelescopeResults', 'TelescopePreview' },
@@ -280,7 +281,7 @@ require('lazy').setup({
         })
       end,
     },
-    { -- Replacement for deprecated telescope code actions popup
+    { -- Replacement for deprecated Telescope code actions popup
       'aznhe21/actions-preview.nvim',
       event = 'LspAttach',
       dependencies = { 'nvim-telescope/telescope.nvim' },
@@ -323,8 +324,8 @@ require('lazy').setup({
           dap.repl.open()
           vim.cmd('winc w | startinsert')
         end)
-        vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint)
-        vim.keymap.set('n', '<leader>dr', dap.repl.toggle)
+        vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint, { desc = 'Toggle breakpoint' })
+        vim.keymap.set('n', '<leader>dr', dap.repl.toggle, { desc = 'Toggle debugger REPL' })
       end,
     },
     { -- Bridge between mason.nvim and nvim-dap
@@ -487,7 +488,7 @@ vim.lsp.enable('cssls')
 vim.lsp.enable('jsonls')
 vim.lsp.enable('eslint')
 
--- C and C++ LSP (also formats using clang-format and lints with clang-tidy)
+-- C and C++ LSP (also formats with clang-format and lints with clang-tidy)
 vim.lsp.config('clangd', { capabilities = capabilities })
 vim.lsp.enable('clangd')
 
