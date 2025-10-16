@@ -170,7 +170,7 @@ require('lazy').setup({
       dependencies = { 'mason-org/mason.nvim', 'neovim/nvim-lspconfig' },
       opts = {
         automatic_enable = false, -- Customize on_attach, capabilities, and such later
-        ensure_installed = { 'lua_ls', 'pyright' },
+        ensure_installed = { 'lua_ls', 'pyright', 'ts_ls' },
       },
     },
     { -- Enhanced LSP features
