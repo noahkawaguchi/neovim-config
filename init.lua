@@ -100,6 +100,7 @@ local filetype_colorcolumn = {
   just = '100', -- Could be 80 for a more traditional make style
   lua = '100',
   make = '80', -- 80 matches C, but could be 100
+  man = '',
   markdown = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
   rust = '100',
