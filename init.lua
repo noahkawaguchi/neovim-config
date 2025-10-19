@@ -171,7 +171,7 @@ require('lazy').setup({
       dependencies = { 'mason-org/mason.nvim', 'neovim/nvim-lspconfig' },
       opts = {
         automatic_enable = false, -- Customize on_attach, capabilities, and such later
-        ensure_installed = { 'lua_ls', 'pyright', 'ts_ls' },
+        ensure_installed = { 'cssls', 'eslint', 'html', 'jsonls', 'lua_ls', 'pyright', 'ts_ls' },
       },
     },
     { -- Enhanced LSP features
@@ -503,14 +503,17 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
--- HTML, CSS, JSON, and ESLint LSPs from vscode-langservers-extracted
+-- HTML, CSS, JSON, and ESLint LSPs
 vim.lsp.config('html', { capabilities = capabilities, on_attach = disable_lsp_fmt })
-vim.lsp.config('cssls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
-vim.lsp.config('jsonls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
-vim.lsp.config('eslint', { capabilities = capabilities })
 vim.lsp.enable('html')
+
+vim.lsp.config('cssls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
 vim.lsp.enable('cssls')
+
+vim.lsp.config('jsonls', { capabilities = capabilities, on_attach = disable_lsp_fmt })
 vim.lsp.enable('jsonls')
+
+vim.lsp.config('eslint', { capabilities = capabilities })
 vim.lsp.enable('eslint')
 
 -- C and C++ LSP (also formats with clang-format and lints with clang-tidy)
