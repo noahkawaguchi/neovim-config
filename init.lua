@@ -164,6 +164,11 @@ require('lazy').setup({
       -- Update the Mason registry when Mason is updated (doesn't install updates)
       build = ':MasonUpdate',
     },
+    { -- Auto-install/update Mason tools that don't fall under mason-{lspconfig,null-ls,nvim-dap}
+      'WhoIsSethDaniel/mason-tool-installer.nvim',
+      dependencies = { 'mason-org/mason.nvim' },
+      opts = { ensure_installed = { 'tree-sitter-cli' }, auto_update = true, debounce_hours = 24 },
+    },
     -- Basic LSP support
     { 'neovim/nvim-lspconfig' },
     { -- Bridge between mason.nvim and nvim-lspconfig
