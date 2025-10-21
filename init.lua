@@ -255,10 +255,7 @@ require('lazy').setup({
       'jay-babu/mason-null-ls.nvim',
       event = { 'BufReadPre', 'BufNewFile' },
       dependencies = { 'mason-org/mason.nvim', 'nvimtools/none-ls.nvim' },
-      opts = {
-        ensure_installed = { 'stylua', 'prettierd', 'golines' },
-        automatic_installation = true,
-      },
+      opts = { automatic_installation = true }, -- Automatically installs the builtins listed above
     },
     { -- Syntax parser
       'nvim-treesitter/nvim-treesitter',
