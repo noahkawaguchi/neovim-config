@@ -108,6 +108,7 @@ local filetype_colorcolumn = {
   text = '80',
   typescript = '100',
   typescriptreact = '100',
+  zsh = '80',
 }
 
 vim.api.nvim_create_autocmd('FileType', {
@@ -120,7 +121,17 @@ vim.api.nvim_create_autocmd('FileType', {
 -- Indentation rules for file types where the LSP/formatter doesn't seem to change this in insert
 -- mode
 vim.api.nvim_create_autocmd('FileType', {
-  pattern = { 'lua', 'typescript', 'typescriptreact', 'html', 'css', 'json', 'markdown', 'cpp' },
+  pattern = {
+    'cpp',
+    'css',
+    'html',
+    'json',
+    'lua',
+    'markdown',
+    'typescript',
+    'typescriptreact',
+    'zsh',
+  },
   callback = function()
     vim.bo.expandtab = true
     vim.bo.shiftwidth = 2
