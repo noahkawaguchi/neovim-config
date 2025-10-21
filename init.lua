@@ -228,7 +228,7 @@ require('lazy').setup({
       config = function()
         local null_ls = require('null-ls') -- Actually none-ls but called null-ls
         local cspell = require('cspell')
-        local cspell_config = { cspell_config_dirs = { '~/.config/CSPELL_GLOBAL/' } }
+        local cspell_config = { cspell_config_dirs = { '~/dotfiles/CSPELL_GLOBAL/' } }
         local sources = {
           -- Built-ins seem to need to go first
           null_ls.builtins.formatting.prettierd, -- TypeScript and many others
