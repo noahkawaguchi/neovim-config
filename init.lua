@@ -102,6 +102,7 @@ local filetype_colorcolumn = {
   make = '80', -- 80 matches C, but could be 100
   man = '',
   markdown = '',
+  mason = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
   rust = '100',
   sql = '100', -- Could be 80 if more traditional
@@ -529,7 +530,8 @@ vim.lsp.enable('jsonls')
 vim.lsp.config('eslint', { capabilities = capabilities })
 vim.lsp.enable('eslint')
 
--- C and C++ LSP (also formats with clang-format and lints with clang-tidy)
+-- C and C++ LSP (also formats with clang-format and lints with clang-tidy even without those
+-- binaries in the PATH)
 vim.lsp.config('clangd', { capabilities = capabilities })
 vim.lsp.enable('clangd')
 
