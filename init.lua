@@ -40,6 +40,7 @@ vim.o.foldmethod = 'indent' -- Fold by indent level (unless changed later by tre
 vim.o.foldenable = false -- Don't immediately fold by default
 vim.o.list = true -- Indicators for trailing whitespace
 vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for tabs and trailing whitespace
+vim.o.wrap = false -- Disable line wrapping
 
 -- General key bindings
 vim.keymap.set('n', '<F8>', '20<C-y>')
@@ -162,6 +163,17 @@ vim.api.nvim_create_autocmd('FileType', {
     -- columns using golines (via null-ls/none-ls plugin)
     vim.bo.shiftwidth = 4
     vim.bo.tabstop = 4
+  end,
+})
+
+-- Wrap preferences for markdown
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'markdown',
+  callback = function()
+    vim.opt_local.wrap = true -- Enable line wrapping
+    vim.opt_local.linebreak = true -- Wrap on word boundaries
+    vim.opt_local.breakindent = true -- Keep indent level when wrapping
+    vim.opt_local.showbreak = '↳ ' -- Visually mark the beginning of wrapped lines
   end,
 })
 

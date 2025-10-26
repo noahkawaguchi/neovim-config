@@ -1,7 +1,6 @@
 {
-  "language": "en",
-  "version": "0.2",
   "flagWords": [],
+  "version": "0.2",
   "words": [
     "termguicolors",
     "ignorecase",
@@ -62,6 +61,9 @@
     "clippy",
     "nvim",
     "lldb",
-    "docstrings"
-  ]
+    "docstrings",
+    "breakindent",
+    "showbreak"
+  ],
+  "language": "en"
 }
