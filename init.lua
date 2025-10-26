@@ -105,6 +105,7 @@ local filetype_colorcolumn = {
   mason = '',
   python = '72,88', -- 88 as per Black/Ruff, 72 for docstrings/comments
   rust = '100',
+  sh = '80',
   sql = '100', -- Could be 80 if more traditional
   text = '80',
   typescript = '100',
@@ -129,6 +130,7 @@ vim.api.nvim_create_autocmd('FileType', {
     'json',
     'lua',
     'markdown',
+    'sh',
     'typescript',
     'typescriptreact',
     'zsh',
@@ -530,8 +532,8 @@ vim.lsp.enable('jsonls')
 vim.lsp.config('eslint', { capabilities = capabilities })
 vim.lsp.enable('eslint')
 
--- C and C++ LSP (also formats with clang-format and lints with clang-tidy even without those
--- binaries in the PATH)
+-- C and C++ LSP (also formats with clang-format and lints with clang-tidy, even without them in the
+-- PATH)
 vim.lsp.config('clangd', { capabilities = capabilities })
 vim.lsp.enable('clangd')
 
