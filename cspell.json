@@ -1,6 +1,4 @@
 {
-  "flagWords": [],
-  "version": "0.2",
   "words": [
     "termguicolors",
     "ignorecase",
@@ -63,7 +61,10 @@
     "lldb",
     "docstrings",
     "breakindent",
-    "showbreak"
+    "showbreak",
+    "cursorline"
   ],
-  "language": "en"
+  "language": "en",
+  "flagWords": [],
+  "version": "0.2"
 }

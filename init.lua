@@ -40,7 +40,10 @@ vim.o.foldmethod = 'indent' -- Fold by indent level (unless changed later by tre
 vim.o.foldenable = false -- Don't immediately fold by default
 vim.o.list = true -- Indicators for trailing whitespace
 vim.o.listchars = 'trail:·,tab:  ' -- Specify characters for tabs and trailing whitespace
-vim.o.wrap = false -- Disable line wrapping
+vim.o.cursorline = true -- Show cursor line (used in theme)
+vim.o.linebreak = true -- Wrap lines on word boundaries
+vim.o.breakindent = true -- Keep indent level when wrapping lines
+vim.o.showbreak = ' ↪ ' -- Visually mark the beginning of wrapped lines
 
 -- General key bindings
 vim.keymap.set('n', '<F8>', '20<C-y>')
@@ -163,17 +166,6 @@ vim.api.nvim_create_autocmd('FileType', {
     -- columns using golines (via null-ls/none-ls plugin)
     vim.bo.shiftwidth = 4
     vim.bo.tabstop = 4
-  end,
-})
-
--- Wrap preferences for markdown
-vim.api.nvim_create_autocmd('FileType', {
-  pattern = 'markdown',
-  callback = function()
-    vim.opt_local.wrap = true -- Enable line wrapping
-    vim.opt_local.linebreak = true -- Wrap on word boundaries
-    vim.opt_local.breakindent = true -- Keep indent level when wrapping
-    vim.opt_local.showbreak = '↳ ' -- Visually mark the beginning of wrapped lines
   end,
 })
 
@@ -427,13 +419,16 @@ require('lazy').setup({
         colors.generate(true) -- Mirage colors
         require('ayu').setup({
           overrides = {
+            -- Transparent background
             Normal = { bg = 'None' },
             SignColumn = { bg = 'None' },
             Folded = { bg = 'None', fg = colors.fg, bold = true, italic = true },
             FoldColumn = { bg = 'None' },
             CursorLine = { bg = 'None' },
             CursorColumn = { bg = 'None' },
+            CursorLineNr = { fg = colors.fg, bg = 'None' },
             VertSplit = { bg = 'None' },
+            Visual = { bg = colors.selection_bg }, -- Make selections stand out more
             TelescopeNormal = { bg = colors.bg }, -- Make Telescope pop-ups opaque
             -- For theHamsta/nvim-dap-virtual-text
             NvimDapVirtualText = { fg = colors.comment, italic = true },
