@@ -562,6 +562,7 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     '*.json',
     '*.jsonc',
     '*.lua',
+    '*.md',
     '*.mts',
     '*.rs',
     '*.ts',
